@@ -28,7 +28,7 @@ fn main() -> Result<(), Error> {
 
     println!("Parsing {:?}", &args.main_dir);
     let parser =
-        BoostDiFileParser::new("D:\\prog\\stilla\\NioReader\\NioReaderServer".to_string())?;
+        BoostDiFileParser::new(args.main_dir)?;
     let generator = MermaidGenerator::new(args.output_file)?;
     let project = parser.analyze_dir()?;
     generator.generate(&project)
