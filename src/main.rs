@@ -1,6 +1,7 @@
 mod boost_di_file_parser;
 mod di_parser;
 mod error;
+mod project_map;
 
 use clap::Parser;
 
