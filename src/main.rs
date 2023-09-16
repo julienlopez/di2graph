@@ -1,5 +1,6 @@
 mod di_parsers;
 mod error;
+mod graph_generators;
 mod project_map;
 
 use clap::Parser;
