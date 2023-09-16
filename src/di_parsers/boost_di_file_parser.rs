@@ -1,5 +1,6 @@
 use crate::di_parsers::di_parser::DiParser;
 use crate::error::Error;
+use crate::project_map::ProjectMap;
 
 use walkdir::WalkDir;
 
@@ -17,7 +18,7 @@ impl BoostDiFileParser {
 }
 
 impl DiParser for BoostDiFileParser {
-    fn analyze_dir(&self) -> Result<(), Error> {
+    fn analyze_dir(&self) -> Result<ProjectMap, Error> {
         for entry in WalkDir::new(&self.main_dir)
             .follow_links(true)
             .into_iter()
@@ -29,6 +30,6 @@ impl DiParser for BoostDiFileParser {
                 println!("{}", f_name);
             }
         }
-        Ok(())
+        Ok(ProjectMap::new())
     }
 }
