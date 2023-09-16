@@ -1,13 +1,12 @@
-mod boost_di_file_parser;
-mod di_parser;
+mod di_parsers;
 mod error;
 mod project_map;
 
 use clap::Parser;
 
-use crate::boost_di_file_parser::BoostDiFileParser;
-use crate::di_parser::DiParser;
-use crate::error::Error;
+use di_parsers::boost_di_file_parser::BoostDiFileParser;
+use di_parsers::di_parser::DiParser;
+use error::Error;
 
 #[derive(Parser, Debug)]
 struct CliArgs {

@@ -1,3 +1,4 @@
+use crate::di_parsers::di_parser::DiParser;
 use crate::error::Error;
 
 use walkdir::WalkDir;
@@ -15,7 +16,7 @@ impl BoostDiFileParser {
     }
 }
 
-impl crate::di_parser::DiParser for BoostDiFileParser {
+impl DiParser for BoostDiFileParser {
     fn analyze_dir(&self) -> Result<(), Error> {
         for entry in WalkDir::new(&self.main_dir)
             .follow_links(true)
