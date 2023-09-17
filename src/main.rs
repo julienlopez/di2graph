@@ -2,6 +2,7 @@ mod di_parsers;
 mod error;
 mod graph_generators;
 mod project_map;
+mod utils;
 
 use clap::Parser;
 
@@ -27,8 +28,7 @@ fn main() -> Result<(), Error> {
     dbg!(&args);
 
     println!("Parsing {:?}", &args.main_dir);
-    let parser =
-        BoostDiFileParser::new(args.main_dir)?;
+    let parser = BoostDiFileParser::new(args.main_dir)?;
     let generator = MermaidGenerator::new(args.output_file)?;
     let project = parser.analyze_dir()?;
     generator.generate(&project)
