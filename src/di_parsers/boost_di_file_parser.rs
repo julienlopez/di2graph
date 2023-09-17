@@ -23,10 +23,8 @@ impl BoostDiFileParser {
 
     fn process_file(&self, file_content: String) -> Result<Vec<String>, Error> {
         let calls = extract_di_calls_from_file(file_content)?;
-        calls.iter().for_each(|c| {
-            println!("{}", c);
-        });
-        Ok(calls)
+        let res = calls.into_iter().map(cleanup_whitespaces);
+        Ok(res.collect())
     }
 }
 
@@ -42,6 +40,9 @@ impl DiParser for BoostDiFileParser {
             if f_name.ends_with(".cpp") {
                 println!("{}", f_name);
                 let res = self.process_file(fs::read_to_string(&entry.path())?)?;
+                res.iter().for_each(|c| {
+                    println!(" : {}", c);
+                });
             }
         }
         Ok(ProjectMap::new())
@@ -70,6 +71,17 @@ fn extract_di_calls_from_file(file_content: String) -> Result<Vec<String>, Error
             Ok(substr.to_str().to_string())
         });
     matches.collect()
+}
+
+fn cleanup_whitespaces(s: String) -> String {
+    if s.contains('#') {
+        return s;
+    }
+    s.trim()
+        .split(' ')
+        .filter(|s| !s.is_empty())
+        .collect::<Vec<_>>()
+        .join(" ")
 }
 
 #[cfg(test)]
