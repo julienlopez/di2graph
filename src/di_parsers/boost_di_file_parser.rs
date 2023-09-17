@@ -1,8 +1,13 @@
 use crate::di_parsers::di_parser::DiParser;
 use crate::error::Error;
 use crate::project_map::ProjectMap;
+use crate::utils::substring::SubString;
 
 use walkdir::WalkDir;
+
+use regex::Regex;
+
+use std::fs;
 
 pub struct BoostDiFileParser {
     main_dir: String,
@@ -14,6 +19,14 @@ impl BoostDiFileParser {
             panic!("main dir is not valid.");
         }
         Ok(BoostDiFileParser { main_dir })
+    }
+
+    fn process_file(&self, file_content: String) -> Result<Vec<String>, Error> {
+        let calls = extract_di_calls_from_file(file_content)?;
+        calls.iter().for_each(|c| {
+            println!("{}", c);
+        });
+        Ok(calls)
     }
 }
 
@@ -28,8 +41,72 @@ impl DiParser for BoostDiFileParser {
 
             if f_name.ends_with(".cpp") {
                 println!("{}", f_name);
+                let res = self.process_file(fs::read_to_string(&entry.path())?)?;
             }
         }
         Ok(ProjectMap::new())
+    }
+}
+
+fn is_di_extract_complete(line: &str) -> bool {
+    let nb_open_par = line.chars().filter(|c| *c == '(').count();
+    let nb_closed_par = line.chars().filter(|c| *c == ')').count();
+    nb_open_par <= nb_closed_par
+}
+
+fn extract_di_calls_from_file(file_content: String) -> Result<Vec<String>, Error> {
+    let re = Regex::new(r"boost::di::bind<.+>[^,]*\)(,|\);)").unwrap();
+    let matches = re
+        .find_iter(&file_content)
+        .map(|mat| -> Result<String, Error> {
+            let mut substr = SubString::new(&file_content, mat.start(), mat.end())?;
+            assert!(substr.to_str() == mat.as_str());
+            while !is_di_extract_complete(substr.to_str()) {
+                let next_pos = &file_content[substr.get_end()..]
+                    .find(')')
+                    .ok_or(Error::Message("Unable to find next position".to_string()))?;
+                substr.increase_end(next_pos + 1)?;
+            }
+            Ok(substr.to_str().to_string())
+        });
+    matches.collect()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_is_di_extract_complete() {
+        assert!(is_di_extract_complete("boost::di::bind<IA>.to<A>(),"));
+        assert!(is_di_extract_complete("boost::di::bind<IA>.to<A>());"));
+        assert!(is_di_extract_complete("boost::di::bind<N::IA>.to<N::A>(),"));
+        assert!(is_di_extract_complete(
+            "boost::di::bind<N::IA>.to<N::A>());"
+        ));
+        assert!(is_di_extract_complete("boost::di::bind<IA>.to(my_a_var),"));
+        assert!(is_di_extract_complete("boost::di::bind<IA>.to(my_a_var));"));
+        assert!(is_di_extract_complete("boost::di::bind<IA>.to(fct(b)),"));
+        assert!(is_di_extract_complete("boost::di::bind<IA>.to(fct(b)));"));
+        assert!(is_di_extract_complete(
+            "boost::di::bind<IA>.to<A>().in(boost::di::singleton),"
+        ));
+        assert!(is_di_extract_complete(
+            "boost::di::bind<IA>.to<A>().in(boost::di::singleton));"
+        ));
+        assert!(is_di_extract_complete("boost::di::bind<IA>.to(fct(b, c)),"));
+        assert!(is_di_extract_complete(
+            "boost::di::bind<IA>.to(fct(b, c)));"
+        ));
+        assert!(is_di_extract_complete("boost::di::bind<IA>.to(A{b, c}),"));
+        assert!(is_di_extract_complete("boost::di::bind<IA>.to(A{b, c}));"));
+        assert!(is_di_extract_complete(
+            "boost::di::bind<IA>.to(A{fct(b), c}),"
+        ));
+        assert!(is_di_extract_complete(
+            "boost::di::bind<IA>.to(A{fct(b), c}));"
+        ));
+
+        assert!(!is_di_extract_complete("boost::di::bind<IA>.to(A{fct(b),"));
     }
 }

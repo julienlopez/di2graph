@@ -39,14 +39,15 @@ impl SubString<'_> {
         self.end
     }
 
-    pub fn increase_end(&mut self, increment : usize) -> Result<(), Error> {
+    pub fn increase_end(&mut self, increment: usize) -> Result<(), Error> {
         if self.end + increment >= self.original_string.len() {
-            return Err(Error::Message("the end position would become too large".to_string()));
+            return Err(Error::Message(
+                "the end position would become too large".to_string(),
+            ));
         }
         self.end += increment;
         Ok(())
     }
-
 }
 
 #[cfg(test)]
@@ -90,5 +91,4 @@ mod tests {
         assert_eq!(res_val.get_end(), 7);
         assert_eq!(res_val.to_str(), "bcdefg");
     }
-
 }
