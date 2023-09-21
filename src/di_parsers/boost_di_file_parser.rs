@@ -40,13 +40,19 @@ impl DiParser for BoostDiFileParser {
             if f_name.ends_with(".cpp") {
                 println!("{}", f_name);
                 let res = self.process_file(fs::read_to_string(&entry.path())?)?;
-                res.iter().for_each(|c| {
+                res.iter().filter(|c| !is_tying_a_value(c)).for_each(|c| {
                     println!(" : {}", c);
                 });
             }
         }
         Ok(ProjectMap::new())
     }
+}
+
+fn is_tying_a_value(line: &str) -> bool {
+    let re1 = Regex::new(r".to(<[[:alnum:]]*>)*\(.+\)").unwrap();
+    let re2 = Regex::new(r".to(<[[:alnum:]]*>)*\(\)").unwrap();
+    re1.is_match(line) && !re2.is_match(line)
 }
 
 fn is_di_extract_complete(line: &str) -> bool {
@@ -120,5 +126,26 @@ mod tests {
         ));
 
         assert!(!is_di_extract_complete("boost::di::bind<IA>.to(A{fct(b),"));
+    }
+
+    #[test]
+    fn test_is_tying_a_value() {
+        assert!(!is_tying_a_value("boost::di::bind<IA>.to<A>();"));
+        assert!(!is_tying_a_value("boost::di::bind<IA>.to<A>(),"));
+        assert!(!is_tying_a_value("boost::di::bind<N::IA>.to<N::A>();"));
+        assert!(is_tying_a_value("boost::di::bind<IA>.to(my_a_var));"));
+        assert!(is_tying_a_value("boost::di::bind<IA>.to(fct(b)));"));
+        assert!(!is_tying_a_value(
+            "boost::di::bind<IA>.to<A>().in(boost::di::singleton),"
+        ));
+        assert!(is_tying_a_value("boost::di::bind<IA>.to(fct(b, c)));"));
+        assert!(is_tying_a_value("boost::di::bind<IA>.to(A{b, c}));"));
+        assert!(is_tying_a_value("boost::di::bind<IA>.to(A{fct(b), c}));"));
+        assert!(is_tying_a_value("boost::di::bind<IA>.to(a.b));"));
+        assert!(is_tying_a_value(
+            "boost::di::bind<IA>.to(A{a,
+            b})"
+        ));
+        assert!(is_tying_a_value("boost::di::bind<IA>.to(A{a, b})"));
     }
 }
