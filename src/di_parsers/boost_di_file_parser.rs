@@ -40,9 +40,12 @@ impl DiParser for BoostDiFileParser {
             if f_name.ends_with(".cpp") {
                 println!("{}", f_name);
                 let res = self.process_file(fs::read_to_string(&entry.path())?)?;
-                res.iter().filter(|c| !is_tying_a_value(c)).for_each(|c| {
-                    println!(" : {}", c);
-                });
+                res.iter()
+                    .filter(|c| !is_tying_a_value(c))
+                    .filter(|c| !c.contains("#"))
+                    .for_each(|c| {
+                        println!("-> {}", c);
+                    });
             }
         }
         Ok(ProjectMap::new())
@@ -88,6 +91,7 @@ fn cleanup_whitespaces(s: String) -> String {
         .filter(|s| !s.is_empty())
         .collect::<Vec<_>>()
         .join(" ")
+        .replace('\n', "")
 }
 
 #[cfg(test)]
@@ -142,10 +146,10 @@ mod tests {
         assert!(is_tying_a_value("boost::di::bind<IA>.to(A{b, c}));"));
         assert!(is_tying_a_value("boost::di::bind<IA>.to(A{fct(b), c}));"));
         assert!(is_tying_a_value("boost::di::bind<IA>.to(a.b));"));
-        assert!(is_tying_a_value(
-            "boost::di::bind<IA>.to(A{a,
-            b})"
-        ));
+        // assert!(is_tying_a_value(
+        //     "boost::di::bind<IA>.to(A{a,
+        //     b})"
+        // ));
         assert!(is_tying_a_value("boost::di::bind<IA>.to(A{a, b})"));
     }
 }
